@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+        <title>Babylon.js sample code</title>
+
+        <!-- Babylon.js -->
+<script src="babylon.js"></script>
+        <style>
+            html, body {
+                overflow: hidden;
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+
+            #renderCanvas {
+                width: 100%;
+                height: 100%;
+                touch-action: none;
+            }
+        </style>
+    </head>
+<body>
+    <canvas id="renderCanvas"></canvas>
+    <script>
+        var canvas = document.getElementById("renderCanvas");
+var MyCuber;
+        var createScene = function () {
+        
+            // This creates a basic Babylon Scene object (non-mesh)
+            var scene = new BABYLON.Scene(engine);
+        
+            // This creates and positions a free camera (non-mesh)
+            var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 5, -10), scene);
+        
+            // This targets the camera to scene origin
+            camera.setTarget(BABYLON.Vector3.Zero());
+        
+            // This attaches the camera to the canvas
+            camera.attachControl(canvas, true);
+        
+            // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
+            var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
+        
+            // Default intensity is 1. Let's dim the light a small amount
+            light.intensity = 0.7;
+   
+            // Our built-in 'ground' shape. Params: name, width, depth, subdivs, scene
+            var ground = BABYLON.Mesh.CreateGround("ground1", 9, 9, 2, scene);
+       
+         ground.rotation = new BABYLON.Vector3(-1, 0, 0);
+ 
+ 
+
+ 
+ BABYLON.Effect.ShadersStore["customVertexShader"]=                
+ `
+precision highp float;
+
+// Attributes
+attribute vec3 position;
+attribute vec2 uv;
+
+// Uniforms
+uniform mat4 worldViewProjection;
+
+// Varying
+varying vec2 vUV;
+
+void main(void) {
+    gl_Position = worldViewProjection * vec4(position, 1.0);
+
+    vUV = uv;
+}
+
+                `;
+
+     BABYLON.Effect.ShadersStore["customFragmentShader"]=     
+     `
+precision highp float;
+
+varying vec2 vUV;
+
+uniform sampler2D textureSampler;
+
+void main(void) {
+      gl_FragColor = texture2D(textureSampler, vUV);
+  //  gl_FragColor = texture2D(textureSampler, vec2(vUV.x, (1.0 - vUV.y)*2.0));//图片倒置
+}
+                 `;
+
+
+                // Compile
+                var shaderMaterial = new BABYLON.ShaderMaterial("shader", scene, {
+                    vertex: "custom",
+                    fragment: "custom",
+                },
+                    {
+                        attributes: ["position", "uv"],
+                        uniforms: ["worldViewProjection", "textureSampler"]
+                    });
+
+                var refTexture = new BABYLON.Texture("hehe.png", scene);
+                refTexture.wrapU = BABYLON.Texture.CLAMP_ADDRESSMODE;
+                refTexture.wrapV = BABYLON.Texture.MIRROR_ADDRESSMODE ;
+
+// 0   CLAMP_ADDRESSMODE   不重复
+// 1   WRAP_ADDRESSMODE    重复
+// 2   MIRROR_ADDRESSMODE  镜像重复
+               // var mainTexture = new BABYLON.Texture("amiga.jpg", scene);
+              //  shaderMaterial.setTexture("textureSampler", mainTexture);
+                shaderMaterial.setTexture("textureSampler", refTexture);
+                // shaderMaterial.setFloat("time", 0);
+                // shaderMaterial.setVector3("cameraPosition", BABYLON.Vector3.Zero());
+                // shaderMaterial.backFaceCulling = false;
+
+
+                // var greenMat = new BABYLON.StandardMaterial("greenMat", scene);
+                // greenMat.diffuseTexture = refTexture;
+                //     greenMat.alpha = 0.5;   
+                ground.material = shaderMaterial;
+        //  Sphere.material = shaderMaterial;    
+//MyCuber = box;
+            return scene;
+        
+        };
+        
+        var engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true });
+        var scene = createScene();
+        engine.runRenderLoop(function () {
+
+            if (scene) {
+                scene.render();
+            } 
+        });
+
+        // Resize
+        window.addEventListener("resize", function () {
+            engine.resize();
+        });
+    </script>
+</body>
+</html>
+
+ 
